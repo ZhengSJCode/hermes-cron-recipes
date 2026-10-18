@@ -100,7 +100,7 @@ docs/     portable.md（通用部署） / personalized.md（改造指引）
 ## 安全
 
 - `.env` 在 `.gitignore` 里，**不要提交**。
-- 仓库内已无任何 token / open_id / chat_id / 绝对路径（`grep -rn "zhengshuaijie\|ou_\|oc_" .` 应为空）。
+- 仓库内已无任何 token / open_id / chat_id / 绝对路径（`grep -rnE "ou_|oc_|/Users/|sk-[A-Za-z0-9]{20,}" . --exclude-dir=.git` 应为空）。
 - `jobs/*.job.json` 里的 `${FEISHU_SPACE_ID}` 之类占位符由 `install.py` 在安装时展开；未设置时**保留原文并告警**，不会静默写入空值。
 
 ---
