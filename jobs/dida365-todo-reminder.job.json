@@ -1,0 +1,12 @@
+{
+  "name": "滴答清单待办提醒（每天10点/15点）",
+  "no_agent": false,
+  "repeat": {
+    "times": null,
+    "completed": 62
+  },
+  "prompt": "查看滴答清单（dida365 MCP）里今天到期的未完成任务，以及已经逾期仍未完成的任务，用简短中文清单汇报给用户。查询方式：优先用 mcp__dida365__list_undone_tasks_by_date 查今天（startDate/endDate 为今天 00:00 到 23:59），再用 mcp__dida365__filter_tasks 或 mcp__dida365__list_undone_tasks_by_time_query 补查逾期项。每条任务给出：标题、所属清单、到期时间、优先级（如有）。如果今天没有到期任务、也没有逾期任务，就只回一句「今天没有待办，可以放心」。只读，不要创建或修改任何任务。",
+  "id_slug": "dida365-todo-reminder",
+  "tier": "personalized",
+  "schedule": "0 10,15 * * *"
+}

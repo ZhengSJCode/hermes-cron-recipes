@@ -1,0 +1,12 @@
+{
+  "name": "360 SkillHub 热门技能榜采集（每日·脚本模式）",
+  "no_agent": true,
+  "script": "skillhub360_daily.sh",
+  "repeat": {
+    "times": null,
+    "completed": 30
+  },
+  "id_slug": "skillhub360-trending-daily",
+  "tier": "portable",
+  "schedule": "50 9 * * *"
+}

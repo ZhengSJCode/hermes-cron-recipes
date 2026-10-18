@@ -1,0 +1,21 @@
+{
+  "name": "AI 选题雷达 · 每日信源抓取（09:00）",
+  "no_agent": false,
+  "script": "topic_radar_daily.py",
+  "skills": [
+    "feishu-wiki-maintenance",
+    "web-to-feishu-wiki"
+  ],
+  "repeat": {
+    "times": null,
+    "completed": 24
+  },
+  "enabled_toolsets": [
+    "terminal",
+    "file"
+  ],
+  "prompt": "抓取「AI 选题雷达」4 个信源的最新快照，写入用户飞书知识库（ainative 空间）。\n\n【数据来源】\n本任务已用 script 运行 `~/.hermes/scripts/topic_radar_daily.py`，其输出的结构化 Markdown（4 个源：① AIHOT ② Follow Builders ③ best-skills ④ GitHub Trending）已作为上下文注入，直接使用，**不要重新抓取**。\n\n【落位】\n- 空间 space_id：${FEISHU_SPACE_ID}（ainative）\n- 目标节点：「AI 选题雷达信源」，node_token：${FEISHU_LOG_NODE_TOKEN}\n\n【动作】\n1. 把注入的数据按源拆成 4 篇**滚动文档**（每源一篇，标题固定）：\n   - `AIHOT 每日热点（滚动快照）`\n   - `Follow Builders 每日摘要（滚动快照）`\n   - `best-skills 榜单（滚动快照）`\n   - `GitHub Trending 每日榜（滚动快照）`\n   每篇正文首行写 `> 最近更新：YYYY-MM-DD`，其后是该源的当日快照内容。\n2. **先查后写**：用 `lark-cli wiki +node-list --space-id ${FEISHU_SPACE_ID} --parent-node-token ${FEISHU_LOG_NODE_TOKEN} --as user --format json` 列出现有子节点：\n   - 已存在同名文档 → 用 `lark-cli docs +update --doc \"<wiki url>\" --command overwrite --doc-format markdown --content @./<file>.md --as user` 覆盖（**不要重新 import，会产生重复文档**）。\n   - 不存在 → `lark-cli drive +import --file ./<file>.md --type docx --name \"<标题>\"` 再 `lark-cli wiki +move --obj-type docx --obj-token <token> --target-space-id ${FEISHU_SPACE_ID} --target-parent-token ${FEISHU_LOG_NODE_TOKEN}`。\n3. 在 log 文档（wiki token `${FEISHU_MISC_NODE_TOKEN}`）**顶部**追加一条：\n   `## [YYYY-MM-DD] update | AI 选题雷达每日信源快照`\n   下含 `- Disposition: Update` 与 4 篇文档的完整链接（https://my.feishu.cn/wiki/<token>）。\n   ⚠️ log 是**全量覆盖**：必须先 `docs +fetch` 取现状 → 合并**全部**历史条目 → 整体 overwrite，宁多 fetch 一次也不丢历史；写完必须回读校验（新写入的 4 个 token 都要在回读内容里命中）。\n4. **汇报**（发到本聊天，简短）：只写「更新时间 + 4 个源各抓到多少条 + 4 篇文档链接」。**不复述内容、不贴正文**。\n\n【硬约束】\n- 联网一律用 `tvly` CLI 或 `curl`；**禁用内置 web_search / web_fetch**。\n- 每条命令前 export `LARKSUITE_CLI_NO_UPDATE_NOTIFIER=1 LARKSUITE_CLI_NO_SKILLS_NOTIFIER=1`。\n- lark-cli 的 `--file` / `--content @` **只接受 cwd 相对路径**：先把待传 md 写到 `${HOME}/` 下再引用，用完删除。\n- `wiki +node-list` 输出首行是 `Found N node(s)` 非 JSON，解析前 `tail -n +2`；`+move`/`+import` 输出混有非 JSON 行，从末尾 `{` 往回找 JSON。\n- **某个源抓取失败时如实记录「抓取失败 + 原因」，绝不编造数据**；该源文档保留上次内容并在首行注明本次未更新。\n- 全部完成后删除本次生成的临时 md 文件。",
+  "id_slug": "topic-radar-daily",
+  "tier": "portable",
+  "schedule": "0 9 * * *"
+}

@@ -1,0 +1,17 @@
+{
+  "name": "错题本每日挖掘-MemoryMiningJob",
+  "no_agent": false,
+  "repeat": {
+    "times": null,
+    "completed": 38
+  },
+  "enabled_toolsets": [
+    "terminal",
+    "file",
+    "skill"
+  ],
+  "prompt": "先加载 skill `feishu-workflow-errorbook`（飞书工作流经验资产库），严格按其中「固定坐标」与「晋升流水线与准入策略」执行每日 Memory Mining Job。全程用 lark-cli（--as user）读写 Base，禁止凭记忆填写任何 record_id / 字段值。\n\n任务步骤：\n1. 全量拉取三张表（错题记录 tbl7Hl3HlNYMAxRv、经验模式库 tbl3dVDJxd3ZeCS9、避坑手册 tblB7iSOeut1KYiA，base_token ${FEISHU_RAW_NODE_TOKEN}），确认 has_more=false 拿到全量。\n2. 聚类：按「问题环节 + 现象/根因关键词」对错题记录分组，找出同类 case ≥3 的组，检查该组是否已有对应的经验模式库条目（通过「来源错题」link 反查）。\n3. 晋升判定：\n   - 达到准入策略（重复错误≥3 或 severity=5 每次致败）且尚无 L2 条目的组 → 在经验模式库新建一条 candidate，必须填：模式名/模式类型/适用决策环节/正解描述/错误做法/代价/出现次数/严重度评分/可复用性评分/置信度/生命周期=candidate/来源（含真实会话ID与证据）/来源错题 link（用真实 record_id，形状 [{\"id\":\"recxxx\"}]）。\n   - 已有 L2 条目但出现次数变化的 → 用 +record-upsert --record-id 更新「出现次数」（写绝对值，先查现值）。\n   - 单次低频错误一律不晋升，保持只在 L3。\n4. Candidate Ranking：把生命周期=candidate 的条目按「经验评分」公式字段降序排列，取 Top 10。\n5. 体检：列出状态=未解决/观察中 的错题条目数量与标题；列出「沉淀去向=未沉淀」且已有 L2 模式承载的条目（需要改沉淀去向的，直接改掉并记录改了几条）。\n6. 输出最终汇报（这是要发给用户的内容，中文、简洁、可扫读）：今日新增 candidate N 条（列名+评分）、出现次数更新 N 条、沉淀去向修正 N 条、Candidate Ranking Top10（一行一条：名次 名称 评分 出现次数）、未解决/观察中清单。如果今天没有任何变化，就回一句「今日挖掘无新增候选经验，账本共 X 条错题 / Y 条模式」即可，不要编造变化。\n\n注意：只写 Base，不创建新的 cron 任务，不调用任何 md_* 工具。写库技术坑（相对路径 @file、裸 field map、link 形状）见 skill 内「写库技术坑」。",
+  "id_slug": "errorbook-mining",
+  "tier": "personalized",
+  "schedule": "0 3 * * *"
+}

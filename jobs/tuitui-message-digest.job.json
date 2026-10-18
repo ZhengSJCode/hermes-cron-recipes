@@ -1,0 +1,15 @@
+{
+  "name": "推推消息日报（每天17:00）",
+  "no_agent": false,
+  "skills": [
+    "tuitui-workflows"
+  ],
+  "repeat": {
+    "times": null,
+    "completed": 32
+  },
+  "prompt": "生成「推推消息日报」并直接输出报告正文。\n\n步骤：\n1. 先用 skill_view 加载 skill `tuitui-workflows`，严格按其中「消息日报标准流程」与「汇报结构」执行。\n2. 运行数据采集脚本（默认采集今天，全部会话）：\n   /opt/homebrew/bin/python3.11 ~/.hermes/skills/productivity/tuitui-workflows/scripts/fetch_tuitui_digest.py\n   脚本会调用 tuitui-cli 拉取当日活跃会话及消息，并写出 /tmp/tuitui-digest-<日期>.json。\n3. 读取该 JSON，按以下中文版式输出日报：\n   一、需要你关注 / 直接找你（单聊）：逐条列出「会话 | 时间 | 事项 | 状态（✅已闭环 / ⚠️遗留）」；\n   二、工作群重点：按群分节，每群给主题标签 + 关键结论 + 待办；大群（消息量大）只做要点抽取与发言人/主题归纳，不要逐条贴；\n   三、建议待办：按优先级排序。\n   机器人通知类会话（创建成功通知、会议提醒、审批/通知机器人等）归入噪音，除非重要否则不列。\n4. 只输出日报正文（Markdown），不要输出执行过程、命令或本地文件路径。若脚本退出码为 2 或提示 AUTH NOT READY（tuitui-cli 未授权），则只输出一行：「推推未授权，请到推推『智能体授权小助手』完成授权后再生成日报。」",
+  "id_slug": "tuitui-message-digest",
+  "tier": "personalized",
+  "schedule": "0 17 * * *"
+}

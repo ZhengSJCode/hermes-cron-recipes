@@ -1,0 +1,15 @@
+{
+  "name": "飞书每日日报（09:00）",
+  "no_agent": false,
+  "skills": [
+    "feishu-daily-report"
+  ],
+  "repeat": {
+    "times": null,
+    "completed": 17
+  },
+  "prompt": "生成今天的飞书日报。\n\n第一步：用 skill_view 加载 skill `feishu-daily-report`，严格按其「执行步骤」1~6 执行，不要自创流程。\n\n要点复述（细节以 skill 为准）：\n1. 取当日数据：`date \"+%Y-%m-%d %A\"` 拿日期与星期；滴答清单用 `mcp__dida365__list_undone_tasks_by_time_query`（`today` 取今日待办、`last7day` 取近 7 天积压并与今日去重；**禁用 filter_tasks**，噪音太大）；飞书日历用 `lark-cli calendar +agenda --as user`。\n2. 飞书日历若报 `missing_scope: calendar:calendar.event:read` → 该区块降级写「飞书日历未授权（缺 calendar:calendar.event:read），本次跳过」，**不要因此中断整个任务**。\n3. 读昨日日报（父节点 `${FEISHU_PARENT_TOKEN}` 下标题为「<昨日日期> 日报*」的节点）抽取未闭环项；找不到就写「首篇日报，无昨日记录」。\n4. 按 skill 里的模板生成 markdown，第 0~6 节保持空骨架，只填 `★ 自动带入` 区块。\n5. 入库走两步：`lark-cli drive +import`（`--file` 只接受 cwd 相对路径，先 cd 到 md 所在目录）拿到 `data.token` → `lark-cli wiki +move --obj-type docx --obj-token <token> --target-space-id ${FEISHU_SPACE_ID} --target-parent-token ${FEISHU_PARENT_TOKEN} --as user` 拿到 `data.wiki_token`。\n6. 回读校验：`wiki +node-list --space-id ${FEISHU_SPACE_ID} --parent-node-token ${FEISHU_PARENT_TOKEN}` 断言新 wiki_token 在列表里；`docs +fetch` 断言正文含标题（正文在 `data.document.content`）。\n\n汇报格式：只回一行 `日报已生成：<标题> → https://my.feishu.cn/wiki/<wiki_token>`。**不要贴日报正文**。\n\n若任一步骤结构化失败，只回可操作错误（哪一步、什么错），不要编造成功。",
+  "id_slug": "feishu-daily-report",
+  "tier": "personalized",
+  "schedule": "0 9 * * *"
+}

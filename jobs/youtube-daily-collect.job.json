@@ -1,0 +1,23 @@
+{
+  "name": "YouTube 每日采集（22:00·全自动+质量门禁）",
+  "no_agent": false,
+  "skills": [
+    "youtube-video-collect",
+    "feishu-wiki-maintenance",
+    "web-to-feishu-wiki"
+  ],
+  "workdir": "${HOME}",
+  "repeat": {
+    "times": null,
+    "completed": 31
+  },
+  "enabled_toolsets": [
+    "terminal",
+    "file",
+    "delegation"
+  ],
+  "prompt": "每天 22:00 自动执行 YouTube「榜单发现 → 双类门禁 → 完整采集」全流程。\n\n## 已附带的 skill（在上下文中，直接按其中的步骤执行）\n- `youtube-video-collect`：完整收藏标准流程（Step -1 榜单 → Step 0-8 采集），**这是主流程权威**\n- `feishu-wiki-maintenance`：wiki 节点 token、CLI 坑位、index/log 全量覆盖铁律与回读校验\n- `web-to-feishu-wiki`：抓取配方与内容分型\n\n## 第一步：榜单发现\n```bash\nexport PATH=\"/opt/homebrew/bin:$PATH\"\nrm -f /tmp/ytfeed*.json\nopencli youtube feed --limit 20 -f json > \"/tmp/ytfeed_$(date +%Y%m%d).json\" 2>&1\n```\n⚠️ **读取必须写死当天文件名** `/tmp/ytfeed_$(date +%Y%m%d).json`，**禁用 glob/ls 通配符取第一个** —— 2026-09-12 实锤：任务读到了隔夜的 `/tmp/ytfeed.json`（旧榜单），当天采的 5 个视频在新榜单里 0 命中。分类前先打印第 1 条的 `video_id` + `title` 自检。\n⚠️ 输出末尾会追加 opencli 升级提示（`Update available...`）→ 必须截到最后一个 `]` 再 `json.loads`：\n`s = open(p).read(); d = json.loads(s[:s.rfind(']')+1])`\n字段：`rank / title / channel / duration / views / published / url / video_id`。\n若 opencli 报错（AUTH_REQUIRED / daemon 未运行 / extension 未连接），先跑 `opencli doctor` 并在汇报中如实说明，**严禁编造视频数据**。\n\n## 第二步：双类门禁（用户 2026-09-11 最终口径 —— 只采两类）\n> 用户原话：「只采集个人成长和科技类的吧」。**只保留下面两类，其余一律不采**，无论播放量/排位/制作水准。\n\n### ✅ 采：① 科技类\n- AI-native 研发、Agent 工程、AI 编程工具与评测\n- 软件工程方法论、设计↔代码工程、代码质量与架构\n- 技术趋势与基础设施（模型/推理/工程化）\n- 一线研究者、工程师的**深度技术**访谈（含可迁移知识）\n\n### ✅ 采：② 个人成长类\n- 职业发展与转型、求职与晋升\n- 技能习得、学习方法论、刻意练习\n- 思维方式、心态、决策与习惯\n- 个人生产力、创作者经济（**个人成长向**，非八卦）\n- AI 时代的个人竞争力与不可替代性\n\n### ❌ 不采（即使排位高、播放高、制作精良）\n- 娱乐、生活 vlog、个人叙事、年度回顾、收入炫示\n- 情感、婚恋、跨文化恋爱\n- 旅行、美食、猎奇、挑战类纪录片\n- **纯商业/战略/投资**（如企业经营宏观分析、VC 视角、行业格局评论）—— 除非其内容实质是技术或可迁移的个人方法论\n- 纯产品宣传片、纯新闻播报、无方法论的闲聊访谈\n\n### 门禁规则\n- 前 20 条中属于「个人成长」或「科技」的 **< 5 条 → 本次不采集**，只出榜单表格 + 说明原因，结束任务。\n- ≥5 条 → **只采这两类**，最多 10 个；`★★★` 优先（科技类 AI/Agent 工程 > 个人成长类）。**宁少勿滥**，排除项即使排在前十也不采。\n\n## 第三步：完整采集（逐个执行）\n对筛选出的每个视频，按 `youtube-video-collect` 走完整流程：\nStep 0 幂等检查 → Step 1 元数据 → Step 2 字幕 → Step 3 切句 → Step 4 中译 → Step 5 简介 raw + 逐字稿 raw → Step 6 编译页 → Step 7 index/log。\n- ⚠️ **必须逐个执行，禁止写批量循环脚本**（用户硬规则：「不许批量执行」）。一个视频走完完整流程再开始下一个。\n- 编译页落位：`编译知识库/youtube`（token `${FEISHU_INDEX_NODE_TOKEN}`）；index 中视频页归入 `## youtube` 分组。\n- 中文原生视频无需翻译（字幕直接可用）；英文轨走英译中。\n- 长逐字稿翻译可委派子代理（delegate_task），但**必须做结构校验**：输出行数与输入一致、无缺中文行。\n- ⚠️ **委派必须分段写入**：译文按每段 ≤15KB 分多次 `write_file`（禁止一次写完整文件）—— 实测单次写 ~130KB 会撞坏 JSON 参数、子代理反复重试卡死。\n- ⚠️ **单个视频委派控制在 7 分钟内**（cron 空闲超时 600s、委派心跳 450s 即停手）；超长视频先分批再委派。单视频卡住就记录原因跳过，别拖垮整批。\n- ⚠️ **每个视频走完立即入库 + 更新 index/log**（不要攒到最后），避免任务被超时杀死时丢失已完成战果。\n- 单个视频失败（无字幕/抓取失败）不要卡住整批：记录原因，继续下一个。\n\n## 第四步：汇报（中文）\n1. **榜单表格**：`# | 标题(链接) | 频道 | 时长 | 播放 | 分类 | 评级 | 一句话理由`\n2. **双类门禁判定**（通过 / 不通过 + 依据数字：个人成长/科技类各几条、被排除几条及理由）\n3. **已采集清单**：每个视频一行，标注「科技」或「个人成长」，附 简介 raw / 逐字稿 raw / 编译页 三条 wiki 链接\n4. **失败条目**及原因（如有）\n5. index / log 回读校验结果（行数、条目数）\n\n## 硬约束\n- 全程中文。\n- 所有数据必须来自真实工具输出，**禁止编造**；失败如实报告。\n- **不要调用任何 Marauder `md_*` tool**。\n- lark-cli 调用统一前置 `LARKSUITE_CLI_NO_UPDATE_NOTIFIER=1 LARKSUITE_CLI_NO_SKILLS_NOTIFIER=1`。",
+  "id_slug": "youtube-daily-collect",
+  "tier": "personalized",
+  "schedule": "0 22 * * *"
+}

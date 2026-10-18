@@ -1,0 +1,17 @@
+{
+  "name": "GitHub 热门周榜采集（脚本模式）",
+  "no_agent": true,
+  "script": "github_trending_weekly.sh",
+  "repeat": {
+    "times": null,
+    "completed": 9
+  },
+  "enabled_toolsets": [
+    "terminal",
+    "file"
+  ],
+  "prompt": "GitHub Trending 每周采集（脚本模式 no_agent，不依赖线上模型 API）：脚本抓取 weekly trending，本机模型生成「给谁用/同类仓库对比/中文用途」三列，按六列表格（# | 应用 | 给谁用 | 同类仓库对比 | 用途 | 标签）生成文档并新建到飞书 wiki「GitHub 热门周榜」节点下，stdout 中文汇报。",
+  "id_slug": "github-trending-weekly",
+  "tier": "portable",
+  "schedule": "0 10 * * 1"
+}
